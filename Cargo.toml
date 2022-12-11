@@ -1,0 +1,11 @@
+[package]
+name = "clue-solver"
+version = "0.1.0"
+edition = "2021"
+authors = ["Dylan Starink <dylan@starink.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+
+[dependencies]
