@@ -1,5 +1,6 @@
-use std::{fmt::{self, write}, collections::HashMap};
+use std::{fmt::{self}, collections::HashMap};
 
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum Suspect {
     Mustard,
     Plum,
@@ -22,6 +23,7 @@ impl fmt::Display for Suspect {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum Weapon {
     Rope,
     Candlestick,
@@ -43,6 +45,8 @@ impl fmt::Display for Weapon {
         }
     }
 }
+
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum Room {
     Kitchen,
     Ballroom,
@@ -55,14 +59,57 @@ pub enum Room {
     Billiard
 }
 
-struct PlayerHand {
-    have_suspect: HashMap<Suspect, bool>,
-    does_not_have_suspect: HashMap<Suspect, bool>,
+impl fmt::Display for Room {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Room::Kitchen => write!(f, "Kitchen"),
+            Room::Ballroom => write!(f, "Ballroom"),
+            Room::Conservatory => write!(f, "Conservatory"),
+            Room::Dining => write!(f, "Dining Room"),
+            Room::Lounge => write!(f, "Lounge"),
+            Room::Hall => write!(f, "Hall"),
+            Room::Study => write!(f, "Study"),
+            Room::Library => write!(f, "Library"),
+            Room::Billiard => write!(f, "Billiard Room"),
+        }
+    }
+}
 
-    have_weapon: HashMap<Suspect, bool>,
-    does_not_have_weapon: HashMap<Suspect, bool>,
+/// Contains details about what we know / don't know about a 
+/// player's hand.
+/// 
+/// For example, we might know they have a certain suspect card,
+/// so we mark it under the have_suspect field. Same with weapon and
+/// room.
+/// 
+/// String contains a nice user-readable name to differentiate between
+/// hands.
+#[derive(Debug)]
+pub struct PlayerHand {
+    pub player_name: String,
 
-    have_room: HashMap<Suspect, bool>,
-    does_not_have_room: HashMap<Suspect, bool>,
+    pub have_suspect: HashMap<Suspect, bool>,
+    pub does_not_have_suspect: HashMap<Suspect, bool>,
 
+    pub have_weapon: HashMap<Suspect, bool>,
+    pub does_not_have_weapon: HashMap<Suspect, bool>,
+
+    pub have_room: HashMap<Suspect, bool>,
+    pub does_not_have_room: HashMap<Suspect, bool>,
+}
+
+impl PlayerHand {
+    pub fn new(name: String) -> PlayerHand {
+        PlayerHand { 
+            player_name: name, 
+
+            have_suspect: HashMap::new(), 
+            does_not_have_suspect: HashMap::new(),
+
+            have_weapon: HashMap::new(), 
+            does_not_have_weapon: HashMap::new(), 
+            have_room: HashMap::new(), 
+            does_not_have_room: HashMap::new() 
+        }
+    }
 }
