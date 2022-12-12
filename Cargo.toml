@@ -16,3 +16,4 @@ name = "cluesolverbin"
 path = "src/bin.rs"
 
 [dependencies]
+clap = "4.0.29"
