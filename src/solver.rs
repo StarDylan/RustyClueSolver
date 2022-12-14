@@ -1,7 +1,30 @@
+use std::{io::{self, Write, Read}, fs::File};
+
 use crate::player_hand::*;
 
-struct GameState {
-    player_hands: Vec<PlayerHand>
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct GameState {
+    pub player_hands: Vec<PlayerHand>
+}
+
+impl GameState {
+    pub fn save_to_file(&self, path: &str) -> io::Result<()> {
+        let serialized = serde_json::to_string(self)?;            
+        let mut file = File::create(path)?;
+        file.write_all(serialized.as_bytes())?;
+        file.flush()?;
+
+        Ok(())
+    }
+
+    pub fn read_from_file(path: &str) -> io::Result<Self> {
+        let mut file = File::open(path)?;
+        let mut json_buf: String = String::new();
+        file.read_to_string(&mut json_buf)?;
+        let deserialized: GameState = serde_json::from_str(&json_buf)?;
+
+        Ok(deserialized)
+    }
 }
 
 /// Starts a new game

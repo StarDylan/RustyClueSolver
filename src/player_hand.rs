@@ -1,6 +1,6 @@
-use std::{fmt::{self}, collections::{HashMap, HashSet}};
+use std::{fmt::{self}, collections::{HashSet}};
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence,serde::Serialize, serde::Deserialize)]
 pub enum Suspect {
     Mustard,
     Plum,
@@ -23,7 +23,7 @@ impl fmt::Display for Suspect {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence,serde::Serialize, serde::Deserialize)]
 pub enum Weapon {
     Rope,
     Candlestick,
@@ -46,7 +46,7 @@ impl fmt::Display for Weapon {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence,serde::Serialize, serde::Deserialize)]
 pub enum Room {
     Kitchen,
     Ballroom,
@@ -60,7 +60,7 @@ pub enum Room {
 }
 
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone,serde::Serialize, serde::Deserialize)]
 pub enum Card {
     RoomCard(Room),
     WeaponCard(Weapon),
@@ -96,7 +96,7 @@ impl fmt::Display for Room {
 // Callers from outside my crate can't directly construct me
 // or exhaustively match on my fields!
 #[non_exhaustive]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,serde::Serialize, serde::Deserialize)]
 pub struct PlayerHand {
     pub player_name: String,
 
