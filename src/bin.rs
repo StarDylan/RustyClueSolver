@@ -13,9 +13,9 @@ fn main() -> io::Result<()> {
 
 
     match matches.subcommand() {
-        Some(("init", sub_matches)) => {
+        Some(("init", _sub_matches)) => {
 
-            println!("Starting a new Game!");
+            println!("Starting a new Game!\n\n");
             let stdin = io::stdin();
 
             println!("Please Enter your name");
@@ -23,36 +23,56 @@ fn main() -> io::Result<()> {
             stdin.read_line(&mut user_name)?;
 
 
-            let mut self_hand: PlayerHand = PlayerHand::new(user_name.trim().to_owned());
 
-            println!("\nPlease enter what cards you have:\n");
+            println!("\n\nHow many cards do you have?");
             
-            
+            let number_of_cards: usize;
             loop {
-                let user_card = get_card();
-                match user_card {
-                    Ok(card) => {
-                        self_hand.must_have.insert(card);
-                        println!("Enter next card:\n(Use Ctrl+c when done)")
+                let mut number_of_cards_str = String::new();
+                stdin.read_line(&mut number_of_cards_str)?;
+
+                match number_of_cards_str.trim().parse::<usize>() {
+                    Ok(num) => {
+                        number_of_cards = num;
+                        break;
                     }
 
                     Err(_) => {
-                        break;
+                        println!("Error parsing \"{}\"", number_of_cards_str.trim());
+                        continue;
                     }
                 }
             }
 
-            println!("{:?}",self_hand)
+            let mut self_hand: PlayerHand = PlayerHand::new(user_name.trim().to_owned(), number_of_cards);
 
+            println!("\nPlease enter what cards you have:\n");
+            
+            
+            for _ in 0..number_of_cards {
+                let user_card = get_card();
+                match user_card {
+                    Ok(card) => {
+                        self_hand.must_have.insert(card);
+                        println!("Enter next card:\n")
+                    }
 
+                    Err(e) => {
+                        return Err(e);
+                    }
+                }
+            }
+
+            println!("{:?}",self_hand);
+
+            Ok(())
         },
          
         _ => {
-
+            Ok(())
         }
     }
 
-    Ok(())
 }
 
 
@@ -62,7 +82,7 @@ fn get_card() -> io::Result<Card> {
 
     let mut card_type = String::new();
     loop {
-        println!("What type of card? (Or when done, type \"exit\")");
+        println!("What type of card?");
         println!("r) Room");
         println!("w) Weapon");
         println!("s) Suspect");
@@ -92,7 +112,7 @@ fn get_card() -> io::Result<Card> {
     // TODO: Get rid of all this reptition
     loop {
         let mut card_index = String::new();
-        let mut card_index_num = 0;
+        let card_index_num: usize;
 
         if card_type.chars().nth(0).unwrap() == 'r' {
             // Room Card
