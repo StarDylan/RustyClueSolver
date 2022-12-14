@@ -1,82 +1,17 @@
-use clap::Command;
-use cluesolverlib::player_hand::*;
-use cluesolverlib::solver::*;
+use crate::player_hand::*;
 use std::fmt::Display;
 use std::str::FromStr;
-use std::{io, vec};
+use std::io;
 use error_chain::error_chain;
 
-fn main() -> Result<()> {
-    let matches = Command::new("cluesolver")
-            
-        .subcommand(
-            Command::new("init")
-                .about("Start a new Game")
-        )
-        .get_matches();
-
-
-    match matches.subcommand() {
-        Some(("init", _sub_matches)) => {
-            new_game()?;
-
-            Ok(())
-        },
-         
-        _ => {
-            Ok(())
-        }
+error_chain!{
+    foreign_links {
+        Io(std::io::Error);
+        ParseInt(::std::num::ParseIntError);
     }
-
 }
 
-
-
-fn new_game() -> Result<()> {
-    println!("Starting a new Game!\n\n");
-
-    let user_name = 
-        get_string_from_user("Please Enter your name", |_|{true})?;
-
-    
-    let number_of_cards: usize = 
-        get_number_from_user("\n\nHow many cards do you have?")?;
-
-    let mut self_hand: PlayerHand = PlayerHand::new(user_name.trim().to_owned(), number_of_cards);
-
-
-    println!("\nPlease enter what cards you have:\n");
-    
-    for _ in 0..number_of_cards {
-        let user_card = get_card();
-        match user_card {
-            Ok(card) => {
-                self_hand.must_have.insert(card);
-                println!("Enter next card:\n")
-            }
-
-            Err(e) => {
-                return Err(e);
-            }
-        }
-    }
-
-
-    let state = GameState {
-        player_hands: vec![self_hand]
-    };
-
-    println!("{:#?}", state);
-
-    //state.save_to_file("game_state.json");
-
-    let deserialized_state = GameState::read_from_file("game_state.json").unwrap();
-    println!("{:?}", deserialized_state);
-    
-    Ok(())
-}
-
-fn get_card() -> Result<Card> {
+pub fn get_card_from_user() -> Result<Card> {
 
     let card_type = get_string_from_user(
         "What type of card?\nr) Room\nw) Weapon\ns) Suspect", 
@@ -120,7 +55,7 @@ fn get_card() -> Result<Card> {
 }
 
 
-fn get_string_from_user<F>(prompt: &str, valid_input: F) -> Result<String> where F: Fn(&str) -> bool {
+pub fn get_string_from_user<F>(prompt: &str, valid_input: F) -> Result<String> where F: Fn(&str) -> bool {
     let stdin = io::stdin();
     let mut user_input = String::new();
 
@@ -138,7 +73,7 @@ fn get_string_from_user<F>(prompt: &str, valid_input: F) -> Result<String> where
     }
 }
 
-fn get_number_from_user<T: num::Integer + FromStr>(prompt: &str) -> Result<T> {
+pub fn get_number_from_user<T: num::Integer + FromStr>(prompt: &str) -> Result<T> {
     let string_from_user 
         = get_string_from_user(prompt, |user_input| {
             user_input.trim().parse::<T>().is_ok()
@@ -156,7 +91,7 @@ fn get_number_from_user<T: num::Integer + FromStr>(prompt: &str) -> Result<T> {
         }
 }
 
-fn get_list_item_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<T> where T: Display + Clone {
+pub fn get_list_item_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<T> where T: Display + Clone {
     
     loop {
         let mut counter = 0;
@@ -188,12 +123,5 @@ fn get_list_item_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<T> wh
                 continue;
             }
         }
-    }
-}
-
-error_chain!{
-    foreign_links {
-        Io(std::io::Error);
-        ParseInt(::std::num::ParseIntError);
     }
 }

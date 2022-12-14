@@ -9,11 +9,11 @@ authors = ["Dylan Starink <dylan@starink.com>"]
 
 [lib]
 name = "cluesolverlib"
-path  = "src/lib.rs"
+path  = "src/lib/lib.rs"
 
 [[bin]]
 name = "cluesolverbin"
-path = "src/bin.rs"
+path = "src/bin/bin.rs"
 
 [dependencies]
 clap = "4.0.29"
