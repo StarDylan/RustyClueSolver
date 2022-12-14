@@ -1,5 +1,4 @@
-
-use clap::{Arg, ArgAction, Command};
+use clap::Command;
 use cluesolverlib::player_hand::*;
 use std::io::{self, ErrorKind};
 

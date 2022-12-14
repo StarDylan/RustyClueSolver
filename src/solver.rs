@@ -1,5 +1,3 @@
-use std::mem;
-
 use crate::player_hand::*;
 
 struct GameState {
