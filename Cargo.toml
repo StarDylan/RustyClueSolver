@@ -17,3 +17,4 @@ path = "src/bin.rs"
 
 [dependencies]
 clap = "4.0.29"
+enum-iterator = "1.2.0"
