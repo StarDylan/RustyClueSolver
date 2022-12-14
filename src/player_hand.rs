@@ -1,6 +1,6 @@
-use std::{fmt::{self}, collections::HashMap};
+use std::{fmt::{self}, collections::{HashMap, HashSet}};
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence)]
 pub enum Suspect {
     Mustard,
     Plum,
@@ -23,7 +23,7 @@ impl fmt::Display for Suspect {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence)]
 pub enum Weapon {
     Rope,
     Candlestick,
@@ -46,7 +46,7 @@ impl fmt::Display for Weapon {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, enum_iterator::Sequence)]
 pub enum Room {
     Kitchen,
     Ballroom,
@@ -57,6 +57,14 @@ pub enum Room {
     Study,
     Library,
     Billiard
+}
+
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub enum Card {
+    RoomCard(Room),
+    WeaponCard(Weapon),
+    SuspectCard(Suspect),
 }
 
 impl fmt::Display for Room {
@@ -84,32 +92,28 @@ impl fmt::Display for Room {
 /// 
 /// String contains a nice user-readable name to differentiate between
 /// hands.
-#[derive(Debug)]
+
+// Callers from outside my crate can't directly construct me
+// or exhaustively match on my fields!
+#[non_exhaustive]
+#[derive(Debug, Clone)]
 pub struct PlayerHand {
     pub player_name: String,
 
-    pub have_suspect: HashMap<Suspect, bool>,
-    pub does_not_have_suspect: HashMap<Suspect, bool>,
+    pub number_of_cards: usize,
 
-    pub have_weapon: HashMap<Suspect, bool>,
-    pub does_not_have_weapon: HashMap<Suspect, bool>,
-
-    pub have_room: HashMap<Suspect, bool>,
-    pub does_not_have_room: HashMap<Suspect, bool>,
+    pub must_have: HashSet<Card>,
+    pub does_not_have: HashSet<Card>
 }
 
 impl PlayerHand {
-    pub fn new(name: String) -> PlayerHand {
+    pub fn new(player_name: String, number_of_cards: usize) -> PlayerHand {
         PlayerHand { 
-            player_name: name, 
+            player_name, 
+            number_of_cards,
 
-            have_suspect: HashMap::new(), 
-            does_not_have_suspect: HashMap::new(),
-
-            have_weapon: HashMap::new(), 
-            does_not_have_weapon: HashMap::new(), 
-            have_room: HashMap::new(), 
-            does_not_have_room: HashMap::new() 
+            must_have: HashSet::new(), 
+            does_not_have: HashSet::new(),
         }
     }
 }
