@@ -40,7 +40,22 @@ fn main() -> Result<()> {
         },
 
         Some(("verify", _sub_matches)) => {
-            let gs = GameState::read_from_file(GAME_STATE_PATH)?;
+            let gs = match GameState::read_from_file(GAME_STATE_PATH) {
+                Ok(game_state) => game_state,
+
+                Err(e) => match e.kind(){
+                    io::ErrorKind::NotFound => {
+                        eprintln!("File \"{}\" not found!", GAME_STATE_PATH);
+                        return Ok(());
+                    }
+
+                    _ => {
+                    println!("{} {}", "Unable to open file because".red(), e);
+                    return Ok(());
+                    }
+                }
+                
+            };
 
             match gs.verify_state() {
                 Ok(()) => 
