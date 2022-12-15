@@ -1,10 +1,12 @@
 use clap::Command;
 use cluesolverlib::player_hand::*;
-use std::vec;
+use std::collections::HashSet;
+use std::iter;
 use std::fmt::Display;
 use std::str::FromStr;
 use std::io;
 use error_chain::error_chain;
+use colored::*;
 
 use cluesolverlib::solver::*;
 
@@ -15,12 +17,17 @@ error_chain!{
     }
 }
 
+const GAME_STATE_PATH: &str = "game_state.json";
+
 fn main() -> Result<()> {
     let matches = Command::new("cluesolver")
             
         .subcommand(
             Command::new("init")
-                .about("Start a new Game")
+                .about("Start a new Game"))
+        .subcommand(
+            Command::new("verify")
+                .about("Verifies Game State")
         )
         .get_matches();
 
@@ -28,6 +35,20 @@ fn main() -> Result<()> {
     match matches.subcommand() {
         Some(("init", _sub_matches)) => {
             new_game()?;
+
+            Ok(())
+        },
+
+        Some(("verify", _sub_matches)) => {
+            let gs = GameState::read_from_file(GAME_STATE_PATH)?;
+
+            match gs.verify_state() {
+                Ok(()) => 
+                    println!("{}", "Game State Verified Successfully!".green()),
+
+                Err(reason) => 
+                    println!("{} {:?} :(","Game State Verification failed because".red(), reason)
+            }
 
             Ok(())
         },
@@ -48,42 +69,78 @@ fn new_game() -> Result<()> {
         get_string_from_user("Please Enter your name", |_|{true})?;
 
     
-    let number_of_cards: usize = 
-        get_number_from_user("\n\nHow many cards do you have?")?;
+    let number_of_other_players: usize = 
+        get_number_from_user("\nHow many other players are there?")?;
 
     let mut self_hand: PlayerHand = 
-        PlayerHand::new(user_name.trim().to_owned(), number_of_cards);
+        PlayerHand::new(user_name.trim().to_owned());
 
+    let number_of_public_cards = 21 % (number_of_other_players + 1);
 
-    println!("\nPlease enter what cards you have:\n");
+    let number_of_cards_per_player = 
+        (21 - number_of_public_cards) / (number_of_other_players + 1);
+
+    println!("\nPlease enter the cards you have:\n");
     
-    for _ in 0..number_of_cards {
-        let user_card = get_card_from_user();
-        match user_card {
-            Ok(card) => {
-                self_hand.must_have.insert(card);
-                println!("Enter next card:\n")
-            }
+    for _ in 0..number_of_cards_per_player {
+        let user_card = get_card_from_user()?;
 
-            Err(e) => {
-                return Err(e);
-            }
-        }
+        self_hand.must_have.insert(user_card);
     }
 
+    println!("Completed with Self Setup...\n");
 
-    let state = GameState {
-        player_hands: vec![self_hand]
-    };
+    let mut other_player_hands: Vec<PlayerHand> = Vec::new();
 
-    println!("{:#?}", state);
+    for _ in 0..number_of_other_players {
+        let other_player_name = 
+            get_string_from_user("\n\nPlease Enter the name of the next player:", |_|{true})?;
 
-    //state.save_to_file("game_state.json");
+        other_player_hands.push(PlayerHand::new(other_player_name))
+    }
 
-    let deserialized_state = GameState::read_from_file("game_state.json").unwrap();
-    println!("{:?}", deserialized_state);
+    println!("Who is starting the game?");
+
+    let mut all_player_iter = 
+        iter::once(self_hand.player_name.to_owned())
+        .chain(other_player_hands.iter().map(|hand| hand.player_name.clone()));
+
+
+    let starting_player = get_list_index_from_user(&mut all_player_iter)?;
+
+    let mut public_cards = HashSet::new();
+
+    for public_card_index in 0..number_of_public_cards {
+        println!("\n\nPublic Facing Card #{}", public_card_index);
+
+        let card = get_card_from_user()?;
+
+        public_cards.insert(card);        
+    }
     
-    Ok(())
+
+
+    let state = GameState::new_game_state(self_hand, other_player_hands, starting_player, public_cards);
+
+    let verify_result = state.verify_state();
+
+    match state.verify_state() {
+        Ok(()) => {
+            println!("{} {}", "\nState Verified!".green(), "Saved to file".purple());
+
+            state.save_to_file(GAME_STATE_PATH)?;
+    
+            Ok(())
+        }
+
+        Err(reason) => {
+            println!("{} {:?}", "\nError! Failed to verify init state because of".red(), reason);
+
+            Ok(())
+        }
+
+    }
+
 }
 
 
@@ -145,7 +202,7 @@ pub fn get_string_from_user<F>(prompt: &str, valid_input: F) -> Result<String> w
         stdin.read_line(&mut user_input)?;
 
         if valid_input(&user_input) {
-            return Ok(user_input);
+            return Ok(user_input.trim().to_owned());
         } else {
             println!("Invalid Input, Please try again.");
             user_input = String::new();
@@ -173,6 +230,42 @@ pub fn get_number_from_user<T: num::Integer + FromStr>(prompt: &str) -> Result<T
 
 pub fn get_list_item_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<T> where T: Display + Clone {
     
+    let collected_list: Vec<T> = list.collect();
+
+
+    loop {
+        let mut counter = 0;
+
+        for item in collected_list.iter() {
+            println!("{}) {}", counter, item);
+            counter += 1;
+        }
+
+        let stdin = io::stdin();
+        let mut user_input = String::new();
+
+        stdin.read_line(&mut user_input)?;
+
+        match user_input.trim().parse::<usize>() {
+            Ok(num) => {
+                if num >= counter {
+                    println!("{} is not within the index range!\n", num);
+                    continue;
+                }
+
+                return Ok(collected_list[num].clone());
+            }
+
+            Err(_) => {
+                println!("Error parsing \"{}\"\n", user_input.trim());
+                continue;
+            }
+        }
+    }
+}
+
+pub fn get_list_index_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<usize> where T: Display + Clone {
+    
     loop {
         let mut counter = 0;
         let mut indexed_list =  Vec::new();
@@ -195,7 +288,7 @@ pub fn get_list_item_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<T
                     continue;
                 }
 
-                return Ok(indexed_list[num].clone());
+                return Ok(num);
             }
 
             Err(_) => {
