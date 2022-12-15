@@ -36,7 +36,7 @@ impl PlayerHand {
             return true;
         }
 
-        if self.must_not_have.len() == (21 - expected_number_of_cards - self.must_have.len()) {
+        if self.must_not_have.len() == (18 - expected_number_of_cards - self.must_have.len()) {
             return true;
         }
         

@@ -90,10 +90,10 @@ fn new_game() -> Result<()> {
     let mut self_hand: PlayerHand = 
         PlayerHand::new(user_name.trim().to_owned());
 
-    let number_of_public_cards = 21 % (number_of_other_players + 1);
+    let number_of_public_cards = 18 % (number_of_other_players + 1);
 
     let number_of_cards_per_player = 
-        (21 - number_of_public_cards) / (number_of_other_players + 1);
+        (18 - number_of_public_cards) / (number_of_other_players + 1);
 
     println!("\nPlease enter the cards you have:\n");
     

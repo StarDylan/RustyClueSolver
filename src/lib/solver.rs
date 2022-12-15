@@ -71,8 +71,8 @@ impl GameState {
         //todo!("Do a result with Errors");
 
         let number_of_players = self.player_hands.len();
-        let public_cards = 21 % number_of_players;
-        let number_of_cards_expected = (21 - public_cards) / number_of_players;
+        let public_cards = 18 % number_of_players;
+        let number_of_cards_expected = (18 - public_cards) / number_of_players;
 
 
         let mut already_must_have_cards: HashSet<Card> = HashSet::new();
@@ -99,7 +99,7 @@ impl GameState {
                 return Err(GameStateVerifyError::PlayerCardContradiction);
             }
 
-            if player.must_not_have.len() > (21 - number_of_cards_expected) {
+            if player.must_not_have.len() > (18 - number_of_cards_expected) {
                 // Can't have less cards then required to
                 return Err(GameStateVerifyError::PlayerMustHaveMoreCardsThenExpected);
             }
