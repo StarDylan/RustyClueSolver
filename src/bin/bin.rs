@@ -62,7 +62,7 @@ fn main() -> Result<()> {
                     println!("{}", "Game State Verified Successfully!".green()),
 
                 Err(reason) => 
-                    println!("{} {:?} :(","Game State Verification failed because".red(), reason)
+                    println!("{} {:?}","Game State Verification failed because".red(), reason)
             }
 
             Ok(())

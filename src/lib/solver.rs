@@ -74,7 +74,22 @@ impl GameState {
         let public_cards = 21 % number_of_players;
         let number_of_cards_expected = (21 - public_cards) / number_of_players;
 
+
+        let mut already_must_have_cards: HashSet<Card> = HashSet::new();
+
         for player in self.player_hands.iter() {
+
+            if !already_must_have_cards.is_disjoint(&player.must_have) {
+                // Overlapping, Contradiction since two different players can't
+                // have the same card.
+                return Err(GameStateVerifyError::PlayerCardContradiction);
+            }
+
+            // Update the cards we've already checked against
+            for card in &player.must_have {
+                already_must_have_cards.insert(card.clone());
+            }
+
             if player.must_have.len() > number_of_cards_expected {
                 return Err(GameStateVerifyError::PlayerMustHaveMoreCardsThenExpected);
             }
