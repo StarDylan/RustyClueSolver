@@ -137,8 +137,6 @@ fn new_game() -> Result<()> {
 
     let state = GameState::new_game_state(self_hand, other_player_hands, starting_player, public_cards);
 
-    let verify_result = state.verify_state();
-
     match state.verify_state() {
         Ok(()) => {
             println!("{} {}", "\nState Verified!".green(), "Saved to file".purple());

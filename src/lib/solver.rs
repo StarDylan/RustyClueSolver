@@ -1,4 +1,4 @@
-use std::{io::{self, Write, Read}, fs::File, collections::HashSet, fmt::Display};
+use std::{io::{self, Write, Read}, fs::File, collections::HashSet};
 
 use crate::player_hand::*;
 
