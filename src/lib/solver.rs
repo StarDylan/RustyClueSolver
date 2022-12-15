@@ -1,6 +1,6 @@
 use std::{io::{self, Write, Read}, fs::File, collections::HashSet};
 
-use crate::player_hand::*;
+use crate::{player_hand::*, accusation::{Accusation, self}};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct GameState {
@@ -8,6 +8,8 @@ pub struct GameState {
 
     pub player_hands: Vec<PlayerHand>,
     pub self_index: usize,
+
+    accusations: Vec<Accusation>,
 }
 
 
@@ -53,8 +55,12 @@ impl GameState {
             public_cards,
 
             player_hands,
-            self_index
+            self_index,
+
+            accusations: Vec::new(),
         }
+
+        
     }
 
 
@@ -118,6 +124,15 @@ impl GameState {
 
         return Ok(());
     }
+
+    pub fn add_accusation(&mut self, accusation: Accusation) {
+        self.accusations.push(accusation);
+    }
+
+    pub fn get_playing_player(&self) -> usize {
+        self.accusations.len() % self.player_hands.len()
+    }
+
 
     pub fn save_to_file(&self, path: &str) -> io::Result<()> {
         let serialized = serde_json::to_string(self)?;            

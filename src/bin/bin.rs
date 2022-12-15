@@ -1,7 +1,8 @@
 use clap::Command;
+use cluesolverlib::accusation::Accusation;
 use cluesolverlib::player_hand::*;
 use std::collections::HashSet;
-use std::iter;
+use std::{iter, vec};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::io;
@@ -24,7 +25,11 @@ fn main() -> Result<()> {
             
         .subcommand(
             Command::new("init")
-                .about("Start a new Game"))
+            .about("Start a new Game"))
+
+        .subcommand(
+            Command::new("accuse")
+            .about("Add a record of accusation"))
         .subcommand(
             Command::new("verify")
                 .about("Verifies Game State")
@@ -68,6 +73,11 @@ fn main() -> Result<()> {
             Ok(())
         },
          
+        Some(("accuse", _sub_matches)) => {
+            accuse()?;
+
+            Ok(())
+        }
         _ => {
             Ok(())
         }
@@ -116,12 +126,13 @@ fn new_game() -> Result<()> {
 
     println!("Who is starting the game?");
 
-    let mut all_player_iter = 
-        iter::once(self_hand.player_name.to_owned())
-        .chain(other_player_hands.iter().map(|hand| hand.player_name.clone()));
+    let all_players = 
+        iter::once(self_hand.clone())
+        .chain(other_player_hands.clone())
+        .collect();
 
 
-    let starting_player = get_list_index_from_user(&mut all_player_iter)?;
+    let starting_player = get_player_from_user(&all_players, vec![])?;
 
     let mut public_cards = HashSet::new();
 
@@ -135,14 +146,86 @@ fn new_game() -> Result<()> {
     
 
 
-    let state = GameState::new_game_state(self_hand, other_player_hands, starting_player, public_cards);
+    let gs = GameState::new_game_state(self_hand, other_player_hands, starting_player, public_cards);
 
+    verify_state_and_save(gs)?;
+
+    Ok(())
+
+}
+
+fn accuse() -> Result<()> {
+    let mut gs = GameState::read_from_file(GAME_STATE_PATH)?;
+
+    println!("Who is making the Accusation?");
+    let accuser_player_index = get_player_from_user(&gs.player_hands, vec![])?;
+
+    println!("\n{}'s Turn Now!", gs.player_hands[accuser_player_index].player_name.purple());
+
+
+    println!("\n\nPlease enter their accusation");
+    let room = get_room_card_from_user()?;
+    println!("");
+    let weapon = get_weapon_card_from_user()?;
+    println!("");
+    let suspect = get_suspect_card_from_user()?;
+
+
+
+    let someone_respond = get_yes_no_from_user("\nDid anyone respond? (y/n)")?;
+
+    let responding_player_index: Option<usize>;
+    let card_shown: Option<Card>;
+
+
+    if !someone_respond {
+        responding_player_index = None;
+        card_shown = None;
+    } else {
+        println!("\nWho Responded?");
+        responding_player_index = Some(get_player_from_user(&gs.player_hands, vec![accuser_player_index])?);
+
+        if accuser_player_index == gs.self_index {
+            println!("\n\nWhat card did they show you?");
+            card_shown = Some(get_card_from_user()?);
+        } else {
+
+            if gs.self_index == responding_player_index.unwrap() {
+                println!("\n\nWhat card did you show them?");
+                card_shown = Some(get_card_from_user()?);
+            }else {
+                card_shown = None;
+            }
+        }
+    }
+
+
+    gs.add_accusation(Accusation {
+        accuser_player_index,
+        room,
+        suspect,
+        weapon,
+        responding_player_index: responding_player_index,
+        card_shown: card_shown,
+    });
+    
+
+    verify_state_and_save(gs)?;
+
+    Ok(())
+}
+
+// -------------------------------
+// ------User Input Helpers-------
+// -------------------------------
+
+pub fn verify_state_and_save(state: GameState) -> Result<()> {
     match state.verify_state() {
         Ok(()) => {
             println!("{} {}", "\nState Verified!".green(), "Saved to file".purple());
 
             state.save_to_file(GAME_STATE_PATH)?;
-    
+
             Ok(())
         }
 
@@ -151,20 +234,14 @@ fn new_game() -> Result<()> {
 
             Ok(())
         }
-
     }
 
 }
 
-
-// -------------------------------
-// ------User Input Helpers-------
-// -------------------------------
-
 pub fn get_card_from_user() -> Result<Card> {
 
     let card_type = get_string_from_user(
-        "What type of card?\nr) Room\nw) Weapon\ns) Suspect", 
+        "r) Room\nw) Weapon\ns) Suspect", 
         |user_input| {
             if user_input.chars().nth(0).is_none() {
                 return false;
@@ -180,30 +257,45 @@ pub fn get_card_from_user() -> Result<Card> {
         })?;
 
 
-    println!("\n\nPlease enter the number of the card you have:");
-
     loop {
         if card_type.chars().nth(0).unwrap() == 'r' {
             // Room Card
-            let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Room>())?;
+            let selected_room_card = get_room_card_from_user()?;
 
             return Ok(Card::RoomCard(selected_room_card));
-
+        
         } else if card_type.chars().nth(0).unwrap() == 'w' {
             // Weapon Card
-            let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Weapon>())?;
+            let selected_room_card = get_weapon_card_from_user()?;
 
             return Ok(Card::WeaponCard(selected_room_card));
 
         } else if card_type.chars().nth(0).unwrap() == 's' {
             // Suspect Card
-            let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Suspect>())?;
+            let selected_room_card = get_suspect_card_from_user()?;
 
             return Ok(Card::SuspectCard(selected_room_card));
         }
     }
 }
 
+pub fn get_room_card_from_user() -> Result<Room> {
+    let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Room>())?;
+
+    return Ok(selected_room_card);
+}
+
+pub fn get_weapon_card_from_user() -> Result<Weapon> {
+    let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Weapon>())?;
+
+    return Ok(selected_room_card);
+}
+
+pub fn get_suspect_card_from_user() -> Result<Suspect> {
+    let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Suspect>())?;
+
+    return Ok(selected_room_card);
+}
 
 pub fn get_string_from_user<F>(prompt: &str, valid_input: F) -> Result<String> where F: Fn(&str) -> bool {
     let stdin = io::stdin();
@@ -239,6 +331,38 @@ pub fn get_number_from_user<T: num::Integer + FromStr>(prompt: &str) -> Result<T
                 panic!("get_number_from_user failed! with {}", string_from_user.trim());
             }
         }
+}
+
+pub fn get_player_from_user(players_hands: &Vec<PlayerHand>, exclude_indices: Vec<usize>) -> Result<usize> {
+    let mut all_player_iter = 
+        players_hands.iter()
+            .enumerate()
+            .filter_map(|(idx, hand)| {
+                if !exclude_indices.contains(&idx) {
+                    Some((idx, hand.player_name.clone()))
+                } else {
+                    None
+                }
+            });
+
+    let selected_player_index = get_list_index_from_user(&mut all_player_iter)?;
+    
+    Ok(selected_player_index)
+}
+
+pub fn get_yes_no_from_user(prompt: &str) -> Result<bool> {
+    let user_response = get_string_from_user(prompt, |user_input| {
+        let cleaned_str = user_input.to_lowercase();
+
+        return cleaned_str.trim().starts_with('y') || cleaned_str.trim().starts_with('n');
+    })?;
+
+    if user_response.trim().to_lowercase().starts_with('y') {
+        return Ok(true);
+    } else {
+        return Ok(false);
+    }
+    
 }
 
 pub fn get_list_item_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<T> where T: Display + Clone {
@@ -277,14 +401,14 @@ pub fn get_list_item_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<T
     }
 }
 
-pub fn get_list_index_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<usize> where T: Display + Clone {
+pub fn get_list_index_from_user<T>(list: &mut dyn Iterator<Item = (usize,T)>) -> Result<usize> where T: Display + Clone {
     
     loop {
         let mut counter = 0;
         let mut indexed_list =  Vec::new();
 
         for item in &mut *list {
-            println!("{}) {}", counter, item);
+            println!("{}) {}", counter, item.1);
             indexed_list.push(item);
             counter += 1;
         }
@@ -301,7 +425,7 @@ pub fn get_list_index_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<
                     continue;
                 }
 
-                return Ok(num);
+                return Ok(indexed_list[num].0);
             }
 
             Err(_) => {
