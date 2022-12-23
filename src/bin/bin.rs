@@ -22,7 +22,6 @@ fn main() -> Result<()> {
         .subcommand(
             Command::new("init")
             .about("Start a new Game"))
-
         .subcommand(
             Command::new("accuse")
             .about("Add a record of accusation"))
@@ -177,6 +176,7 @@ fn accuse() -> Result<()> {
     let responding_player_index: Option<usize>;
     let card_shown: Option<Card>;
 
+    let is_accuser_self = accuser_player_index == gs.self_index;
 
     if !someone_respond {
         responding_player_index = None;
@@ -185,15 +185,27 @@ fn accuse() -> Result<()> {
         println!("\nWho Responded?");
         responding_player_index = Some(get_player_from_user(&gs.player_hands, vec![accuser_player_index])?);
 
-        if accuser_player_index == gs.self_index {
+        let potential_cards = 
+                vec![Card::RoomCard(room.clone()),
+                Card::WeaponCard(weapon.clone()),
+                Card::SuspectCard(suspect.clone())];
+
+        if is_accuser_self {
             println!("\n\nWhat card did they show you?");
-            card_shown = Some(get_card_from_user()?);
+
+            card_shown = Some(get_list_item_from_user(&mut potential_cards.iter())?.clone());
+
         } else {
 
-            if gs.self_index == responding_player_index.unwrap() {
+            let is_responder_self = responding_player_index.unwrap() ==  gs.self_index;
+
+            if is_responder_self {
                 println!("\n\nWhat card did you show them?");
-                card_shown = Some(get_card_from_user()?);
+
+                card_shown = Some(get_list_item_from_user(&mut potential_cards.iter())?.clone());
+
             }else {
+                // Card shown secretly, no info
                 card_shown = None;
             }
         }
@@ -209,6 +221,8 @@ fn accuse() -> Result<()> {
         card_shown: card_shown,
     });
     
+
+    propagate_state(&mut gs);
 
     verify_state_and_save(gs)?;
 
@@ -401,13 +415,17 @@ pub fn get_list_item_from_user<T>(list: &mut dyn Iterator<Item = T>) -> Result<T
     }
 }
 
-pub fn get_list_index_from_user<T>(list: &mut dyn Iterator<Item = (usize,T)>) -> Result<usize> where T: Display + Clone {
+pub fn get_list_index_from_user<T>(list_iter: &mut dyn Iterator<Item = (usize,T)>) -> Result<usize> where T: Display + Clone {
     
+    let list_as_vec: Vec<(usize, T)> = list_iter.collect();
+
     loop {
+        let list = list_as_vec.iter();
+
         let mut counter = 0;
         let mut indexed_list =  Vec::new();
 
-        for item in &mut *list {
+        for item in list {
             println!("{}) {}", counter, item.1);
             indexed_list.push(item);
             counter += 1;

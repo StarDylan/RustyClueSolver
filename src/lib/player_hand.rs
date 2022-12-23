@@ -104,13 +104,6 @@ pub enum Room {
 }
 
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone,serde::Serialize, serde::Deserialize)]
-pub enum Card {
-    RoomCard(Room),
-    WeaponCard(Weapon),
-    SuspectCard(Suspect),
-}
-
 impl fmt::Display for Room {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -123,6 +116,23 @@ impl fmt::Display for Room {
             Room::Study => write!(f, "Study"),
             Room::Library => write!(f, "Library"),
             Room::Billiard => write!(f, "Billiard Room"),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone,serde::Serialize, serde::Deserialize)]
+pub enum Card {
+    RoomCard(Room),
+    WeaponCard(Weapon),
+    SuspectCard(Suspect),
+}
+
+impl fmt::Display for Card {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Card::RoomCard(room) => write!(f,"{}", room),
+            Card::WeaponCard(weapon) => write!(f,"{}", weapon),
+            Card::SuspectCard(suspect) => write!(f,"{}", suspect),
         }
     }
 }
