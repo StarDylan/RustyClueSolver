@@ -2,14 +2,7 @@ use crate::player_hand::*;
 use std::fmt::Display;
 use std::str::FromStr;
 use std::io;
-use error_chain::error_chain;
-
-error_chain!{
-    foreign_links {
-        Io(std::io::Error);
-        ParseInt(::std::num::ParseIntError);
-    }
-}
+use errors::*;
 
 pub fn get_card_from_user() -> Result<Card> {
 
