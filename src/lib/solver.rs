@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{game_state::GameState, player_hand::Card};
+use crate::{game_state::GameState, player_hand::{Card, Room, Suspect, Weapon}};
 
 
 /// Applies logicial consequences that must be true.
@@ -9,6 +9,18 @@ use crate::{game_state::GameState, player_hand::Card};
 /// function to work correctly!
 pub fn propagate_state(gs: &mut GameState){
 
+    // If a player shows a card, they must have that card
+    for acc in gs.accusations.iter() {
+        if acc.card_shown.is_none() {
+            continue;
+        }
+
+        gs.player_hands
+            .get_mut(acc.responding_player_index.unwrap())
+            .unwrap()
+            .must_have
+            .insert(acc.card_shown.clone().unwrap());
+    }
 
     // -> Does not haves
     // Propogate Does not Haves, if someone could not respond
