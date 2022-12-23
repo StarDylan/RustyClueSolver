@@ -70,9 +70,7 @@ impl GameState {
     pub fn verify_state(&self) -> Result<()> {
         //todo!("Do a result with Errors");
 
-        let number_of_players = self.player_hands.len();
-        let public_cards = 18 % number_of_players;
-        let number_of_cards_expected = (18 - public_cards) / number_of_players;
+        let number_of_cards_expected = self.get_number_of_expected_cards_per_hand();
 
 
         let mut already_must_have_cards: HashSet<Card> = HashSet::new();
@@ -99,7 +97,7 @@ impl GameState {
                 bail!(ErrorKind::PlayerCardContradiction);
             }
 
-            if player.must_not_have.len() > (18 - number_of_cards_expected) {
+            if player.must_not_have.len() > (Card::get_total_cards() - 3 - number_of_cards_expected) {
                 // Can't have less cards then required to
                 bail!(ErrorKind::PlayerMustHaveMoreCardsThenExpected);
             }
@@ -155,6 +153,12 @@ impl GameState {
 
     pub fn add_accusation(&mut self, accusation: Accusation) {
         self.accusations.push(accusation);
+    }
+
+    pub fn get_number_of_expected_cards_per_hand(&self) -> usize {
+        let number_of_cards_not_in_center = Card::get_total_cards() - 3;
+
+        (number_of_cards_not_in_center - (number_of_cards_not_in_center % self.player_hands.len())) / self.player_hands.len()
     }
 
 

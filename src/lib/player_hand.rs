@@ -127,6 +127,15 @@ pub enum Card {
     SuspectCard(Suspect),
 }
 
+impl Card {
+    pub fn get_total_cards() -> usize { 
+        enum_iterator::cardinality::<Room>() + 
+        enum_iterator::cardinality::<Suspect>() +
+        enum_iterator::cardinality::<Weapon>() 
+        - 3
+    }
+}
+
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
