@@ -109,6 +109,24 @@ pub fn propagate_state(gs: &mut GameState){
 
 }
 
+/// Determines what cards could be in the middle
+pub fn get_potentially_winning_cards(gs: &GameState) -> HashSet<Card>{
+    let all_cards = 
+        enum_iterator::all::<Room>()
+            .map(|r|Card::RoomCard(r))
+        .chain(enum_iterator::all::<Suspect>()
+            .map(|s|Card::SuspectCard(s)))
+        .chain(enum_iterator::all::<Weapon>()
+            .map(|w|Card::WeaponCard(w)));
+
+    let mut potentially_winning_cards: HashSet<Card> = all_cards.collect(); 
+
+    for hand in gs.player_hands.iter() {
+        potentially_winning_cards = &potentially_winning_cards - &hand.must_have;
+    }
+
+    return potentially_winning_cards;
+}
 
 /// Gets index of players who are between start and end, wrapping around if neccessary.
 /// 
