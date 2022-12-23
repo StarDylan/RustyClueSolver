@@ -1,5 +1,12 @@
-use crate::{game_state::GameState, player_hand::Card};
+use std::collections::HashSet;
 
+use crate::{game_state::GameState, player_hand::{Card, self}};
+
+
+/// Applies logicial consequences that must be true.
+/// 
+/// GameState must be checked that it is valid for this
+/// function to work correctly!
 pub fn propagate_state(gs: &mut GameState){
 
     // Propogate Does not Haves, if someone could not respond
@@ -28,7 +35,19 @@ pub fn propagate_state(gs: &mut GameState){
     }
 
 
-    // TODO: If someone must have a card, everyone else must not have that card
+    // If someone must have a card, everyone else must not have that card
+    let mut all_must_haves: HashSet<Card> = HashSet::new();
+
+    for player_hand in gs.player_hands.iter() {
+        all_must_haves.extend(player_hand.must_have.clone().into_iter());
+    }
+
+    for player_hand in gs.player_hands.iter_mut() {
+        for card_does_not_have in all_must_haves.difference(&player_hand.must_have) {
+            player_hand.must_not_have.insert(card_does_not_have.clone());
+        }
+    }
+
 }
 
 
@@ -68,6 +87,68 @@ mod tests {
 
     #[test]
     fn test_propogate_state_not_responding_adds_does_not_haves() {
+
+        let mut player_hands = vec![
+            PlayerHand::new("p1".to_owned()),
+            PlayerHand::new("p2".to_owned()),
+            PlayerHand::new("p3".to_owned()),
+            PlayerHand::new("p4".to_owned()),
+        ];
+
+
+        // p1 must have Green
+        player_hands
+            .get_mut(0)
+            .unwrap()
+            .must_have
+            .insert(Card::SuspectCard(Suspect::Green));
+        
+
+        let mut gs = GameState {
+            public_cards: HashSet::new(),
+            player_hands: player_hands,
+            self_index: 0,
+            accusations: Vec::new(),
+        };
+
+        // Everyone else, not p1, must not have green
+        propagate_state(&mut gs);
+
+
+        // Check everyone else must not have green
+        for i in vec![1,2,3] {
+            assert_eq!(gs.player_hands.get(i).unwrap().must_not_have.len(), 1);
+            assert_eq!(gs.player_hands.get(i).unwrap().must_have.len(), 0);
+
+            assert!(gs.player_hands.get(i).unwrap().must_not_have.contains(&Card::SuspectCard(Suspect::Green)));
+
+        }
+
+        // p1 should not change, must have green
+        assert_eq!(gs.player_hands.get(0).unwrap().must_not_have.len(), 0);
+        assert_eq!(gs.player_hands.get(0).unwrap().must_have.len(), 1);
+
+        assert!(gs.player_hands.get(0).unwrap().must_have.contains(&Card::SuspectCard(Suspect::Green)));
+      
+        
+    }
+
+    #[test]
+    fn test_get_responding_players() {
+        let players_between = get_responding_players(0, Some(4), 5);
+
+        let expected_result = vec![1,2,3];
+
+        assert_eq!(players_between.len(), expected_result.len());
+
+        for it in players_between.iter().zip(expected_result.iter()) {
+            let (e1, e2) = it;
+            assert_eq!(*e1, *e2);
+        }
+    }
+
+    #[test]
+    fn test_propogate_state_if_player_must_have_other_players_must_not_have() {
 
         let player_hands = vec![
             PlayerHand::new("p1".to_owned()),
@@ -109,20 +190,6 @@ mod tests {
             assert!(gs.player_hands.get(i).unwrap().must_not_have.contains(&Card::WeaponCard(Weapon::Knife)));
         }
         
-    }
-
-    #[test]
-    fn test_get_responding_players() {
-        let players_between = get_responding_players(0, Some(4), 5);
-
-        let expected_result = vec![1,2,3];
-
-        assert_eq!(players_between.len(), expected_result.len());
-
-        for it in players_between.iter().zip(expected_result.iter()) {
-            let (e1, e2) = it;
-            assert_eq!(*e1, *e2);
-        }
     }
 
     #[test]
