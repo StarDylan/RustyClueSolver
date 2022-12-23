@@ -13,6 +13,8 @@ pub mod errors {
             PlayerCardContradiction
             PlayerHasPublicCard
             SelfIsNotComplete
+            InvalidPlayerIndex
+            AccusationContradiction
         }
 
         foreign_links {

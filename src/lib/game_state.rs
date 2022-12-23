@@ -124,6 +124,28 @@ impl GameState {
             }
         }
 
+        // Check all player indecies are valid
+        if self.self_index >= self.player_hands.len() {
+            bail!(ErrorKind::InvalidPlayerIndex)
+        }
+
+        for acc in self.accusations.iter() {
+            if acc.responding_player_index.is_none() {
+                continue;
+            }
+
+            if acc.responding_player_index.unwrap() >= self.player_hands.len() {
+                bail!(ErrorKind::InvalidPlayerIndex)
+            }
+        }
+
+        // If a card is shown, then the responding player must be Some()
+        for acc in self.accusations.iter() {
+            if acc.card_shown.is_some() && acc.responding_player_index.is_none() {
+                bail!(ErrorKind::AccusationContradiction)
+            }   
+        }
+
         if !self_hand.is_complete(number_of_cards_expected) {
             bail!(ErrorKind::SelfIsNotComplete);
         }
