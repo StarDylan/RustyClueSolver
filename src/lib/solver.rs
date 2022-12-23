@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{game_state::GameState, player_hand::{Card, self}};
+use crate::{game_state::GameState, player_hand::Card};
 
 
 /// Applies logicial consequences that must be true.
@@ -9,6 +9,8 @@ use crate::{game_state::GameState, player_hand::{Card, self}};
 /// function to work correctly!
 pub fn propagate_state(gs: &mut GameState){
 
+
+    // -> Does not haves
     // Propogate Does not Haves, if someone could not respond
     for acc in gs.accusations.iter_mut() {
         let players_who_did_not_have_cards 
@@ -35,16 +37,61 @@ pub fn propagate_state(gs: &mut GameState){
     }
 
 
-    // If someone must have a card, everyone else must not have that card
-    let mut all_must_haves: HashSet<Card> = HashSet::new();
+    // Since the next two blocks might impact each other,
+    // we keep running them until no more changes occur.
+    let mut changed = true;
+    while changed {
+        changed = false;
 
-    for player_hand in gs.player_hands.iter() {
-        all_must_haves.extend(player_hand.must_have.clone().into_iter());
-    }
+        // Must Haves -> Does not haves
+        // If someone must have a card, everyone else must not have that card
+        let mut all_must_haves: HashSet<Card> = HashSet::new();
 
-    for player_hand in gs.player_hands.iter_mut() {
-        for card_does_not_have in all_must_haves.difference(&player_hand.must_have) {
-            player_hand.must_not_have.insert(card_does_not_have.clone());
+        for player_hand in gs.player_hands.iter() {
+            all_must_haves.extend(player_hand.must_have.clone().into_iter());
+        }
+
+        for player_hand in gs.player_hands.iter_mut() {
+            for card_does_not_have in all_must_haves.difference(&player_hand.must_have) {
+                if player_hand.must_not_have.insert(card_does_not_have.clone()) {
+                    changed = true;
+                }
+            }
+        }
+
+        // Does Not haves -> Must Have
+        // If Unknown Accusation, check if the 2 cards they don't have, therefore responding player
+        // must have the third card.
+        for acc in gs.accusations.iter() {
+        
+            // Already know the card
+            if acc.card_shown.is_some() {
+                continue;
+            }
+
+            let potentially_shown_cards: HashSet<Card> = 
+                vec![
+                    Card::SuspectCard(acc.suspect.clone()),
+                    Card::RoomCard(acc.room.clone()),
+                    Card::WeaponCard(acc.weapon.clone())
+                ].into_iter().collect();
+
+
+            let responding_player_hand = gs.player_hands.get_mut(acc.responding_player_index.unwrap()).unwrap();
+
+            if !potentially_shown_cards.is_disjoint(&responding_player_hand.must_have) {
+                // At least one of our potential cards we already know they have, no new info
+                continue;
+            }
+
+            let potentially_shown_cards: HashSet<&Card> = 
+                potentially_shown_cards.difference(&responding_player_hand.must_not_have).collect();
+
+            if potentially_shown_cards.len() == 1 {
+                // Only one option for them to show, they must have this card.
+                responding_player_hand.must_have.insert(potentially_shown_cards.into_iter().next().unwrap().clone());
+                changed = true;
+            }
         }
     }
 
@@ -134,20 +181,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_responding_players() {
-        let players_between = get_responding_players(0, Some(4), 5);
-
-        let expected_result = vec![1,2,3];
-
-        assert_eq!(players_between.len(), expected_result.len());
-
-        for it in players_between.iter().zip(expected_result.iter()) {
-            let (e1, e2) = it;
-            assert_eq!(*e1, *e2);
-        }
-    }
-
-    #[test]
     fn test_propogate_state_if_player_must_have_other_players_must_not_have() {
 
         let player_hands = vec![
@@ -190,6 +223,80 @@ mod tests {
             assert!(gs.player_hands.get(i).unwrap().must_not_have.contains(&Card::WeaponCard(Weapon::Knife)));
         }
         
+    }
+
+    #[test]
+    fn test_propogate_state_unknown_accusation_with_hand() {
+
+        let mut player_hands = vec![
+            PlayerHand::new("p1".to_owned()),
+            PlayerHand::new("p2".to_owned()),
+            PlayerHand::new("p3".to_owned()),
+            PlayerHand::new("p4".to_owned()),
+        ];
+
+
+        // p1 does not have Green or Pistol
+        let p1 = player_hands
+            .get_mut(0)
+            .unwrap();
+
+        p1.must_not_have
+            .insert(Card::SuspectCard(Suspect::Green));
+
+        p1.must_not_have
+        .insert(Card::WeaponCard(Weapon::Pistol));
+        
+
+        let accusations = vec![
+            Accusation { 
+                accuser_player_index: 3, 
+                room: Room::Study, 
+                suspect: Suspect::Green, 
+                weapon: Weapon::Pistol, 
+                responding_player_index: Some(0), 
+                card_shown: None
+            }
+        ];
+
+        let mut gs = GameState {
+            public_cards: HashSet::new(),
+            player_hands: player_hands,
+            self_index: 0,
+            accusations: accusations,
+        };
+
+        propagate_state(&mut gs);
+
+
+        // Check that p1 must have Study
+        assert_eq!(gs.player_hands.get(0).unwrap().must_not_have.len(), 2);
+        assert_eq!(gs.player_hands.get(0).unwrap().must_have.len(), 1);
+
+        assert!(gs.player_hands.get(0).unwrap().must_have.contains(&Card::RoomCard(Room::Study)));
+
+
+        // Check that others must not have Study (since p1 has it)
+        for i in vec![1,2,3] {
+            assert_eq!(gs.player_hands.get(i).unwrap().must_not_have.len(), 1);
+            assert_eq!(gs.player_hands.get(i).unwrap().must_have.len(), 0);
+
+            assert!(gs.player_hands.get(i).unwrap().must_not_have.contains(&Card::RoomCard(Room::Study)));
+        }
+    }
+    
+    #[test]
+    fn test_get_responding_players() {
+        let players_between = get_responding_players(0, Some(4), 5);
+
+        let expected_result = vec![1,2,3];
+
+        assert_eq!(players_between.len(), expected_result.len());
+
+        for it in players_between.iter().zip(expected_result.iter()) {
+            let (e1, e2) = it;
+            assert_eq!(*e1, *e2);
+        }
     }
 
     #[test]
