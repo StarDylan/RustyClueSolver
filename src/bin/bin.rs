@@ -1,22 +1,18 @@
 use clap::Command;
 use cluesolverlib::accusation::Accusation;
 use cluesolverlib::player_hand::*;
+use cluesolverlib::solver::propagate_state;
 use std::collections::HashSet;
 use std::{iter, vec};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::io;
-use error_chain::error_chain;
 use colored::*;
 
-use cluesolverlib::solver::*;
+use cluesolverlib::errors::*;
 
-error_chain!{
-    foreign_links {
-        Io(std::io::Error);
-        ParseInt(::std::num::ParseIntError);
-    }
-}
+use cluesolverlib::game_state::*;
+
 
 const GAME_STATE_PATH: &str = "game_state.json";
 
@@ -48,16 +44,20 @@ fn main() -> Result<()> {
             let gs = match GameState::read_from_file(GAME_STATE_PATH) {
                 Ok(game_state) => game_state,
 
-                Err(e) => match e.kind(){
+                Err(Error(ErrorKind::Io(io_err), _)) => match io_err.kind(){
                     io::ErrorKind::NotFound => {
                         eprintln!("File \"{}\" not found!", GAME_STATE_PATH);
                         return Ok(());
                     }
 
                     _ => {
-                    println!("{} {}", "Unable to open file because".red(), e);
+                    println!("{} {}", "Unable to open file because".red(), io_err);
                     return Ok(());
                     }
+                }
+
+                Err(e) => {
+                    return Err(e);
                 }
                 
             };
