@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{game_state::GameState, player_hand::{Card, Room, Suspect, Weapon}};
+use crate::{game_state::GameState, player_hand::Card};
 
 
 /// Applies logicial consequences that must be true.
@@ -9,6 +9,7 @@ use crate::{game_state::GameState, player_hand::{Card, Room, Suspect, Weapon}};
 /// function to work correctly!
 pub fn propagate_state(gs: &mut GameState){
 
+    // -> Must have
     // If a player shows a card, they must have that card
     for acc in gs.accusations.iter() {
         if acc.card_shown.is_none() {
@@ -105,27 +106,59 @@ pub fn propagate_state(gs: &mut GameState){
                 changed = true;
             }
         }
+
+
+        let number_of_expected_cards_per_hand = gs.get_number_of_expected_cards_per_hand();
+
+        // Must Have -> Does not have
+        // If a player's must have is complete, then finish completing their
+        // must not have with every other card.
+        for player_hand in gs.player_hands.iter_mut() {
+
+            let expected_number_of_does_not_haves_for_complete_hand = 
+                Card::get_total_cards() - number_of_expected_cards_per_hand;
+
+            if player_hand.must_not_have.len() == expected_number_of_does_not_haves_for_complete_hand {
+                continue;
+            }
+
+            if player_hand.must_have.len() == number_of_expected_cards_per_hand {
+                let must_not_haves_to_add = &Card::get_all_cards() - &player_hand.must_have;
+                player_hand.must_not_have.extend(must_not_haves_to_add);
+                changed = true;
+            }
+        } 
     }
 
 }
 
-/// Determines what cards could be in the middle
+/// Determines what cards must and could be
 pub fn get_potentially_winning_cards(gs: &GameState) -> HashSet<Card>{
-    let all_cards = 
-        enum_iterator::all::<Room>()
-            .map(|r|Card::RoomCard(r))
-        .chain(enum_iterator::all::<Suspect>()
-            .map(|s|Card::SuspectCard(s)))
-        .chain(enum_iterator::all::<Weapon>()
-            .map(|w|Card::WeaponCard(w)));
-
-    let mut potentially_winning_cards: HashSet<Card> = all_cards.collect(); 
+    let mut potentially_winning_cards: HashSet<Card> = Card::get_all_cards(); 
 
     for hand in gs.player_hands.iter() {
         potentially_winning_cards = &potentially_winning_cards - &hand.must_have;
     }
 
-    return potentially_winning_cards;
+    potentially_winning_cards = &potentially_winning_cards - &gs.public_cards;
+
+    potentially_winning_cards
+}
+
+pub fn get_guaranteed_winning_cards(gs: &GameState) -> HashSet<Card> {
+    // Get all the cards which everyone does not have.
+    let mut common_do_not_haves: HashSet<Card> = Card::get_all_cards();
+    
+    for hand in gs.player_hands.iter() {
+        common_do_not_haves.retain(|card|hand.must_not_have.contains(card));
+    }
+
+    // Remove elements which are in public cards
+    common_do_not_haves.retain(|card| !gs.public_cards.contains(card));
+
+    let guaranteed_winning_cards = common_do_not_haves;
+
+    guaranteed_winning_cards
 }
 
 /// Gets index of players who are between start and end, wrapping around if neccessary.

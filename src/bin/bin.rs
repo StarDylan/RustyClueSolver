@@ -1,7 +1,8 @@
 use clap::Command;
 use cluesolverlib::accusation::Accusation;
 use cluesolverlib::player_hand::*;
-use cluesolverlib::solver::propagate_state;
+use cluesolverlib::solver::{propagate_state, get_potentially_winning_cards, get_guaranteed_winning_cards};
+use error_chain::ChainedError;
 use std::collections::HashSet;
 use std::{iter, vec};
 use std::fmt::Display;
@@ -27,8 +28,11 @@ fn main() -> Result<()> {
             .about("Add a record of accusation"))
         .subcommand(
             Command::new("verify")
-                .about("Verifies Game State")
-        )
+                .about("Verifies Game State"))
+        .subcommand(
+            Command::new("wins")
+            .about("Finds potential matches for winning cards"))
+
         .get_matches();
 
 
@@ -74,6 +78,73 @@ fn main() -> Result<()> {
          
         Some(("accuse", _sub_matches)) => {
             accuse()?;
+
+            Ok(())
+        }
+        Some(("wins", _sub_matches)) => {
+            let mut gs = GameState::read_from_file(GAME_STATE_PATH)?;
+
+            let verify_result = gs.verify_state();
+
+            if verify_result.is_err() {
+                println!("{} {}","Failed to verify state because".red(), verify_result.unwrap_err());
+                return Ok(());
+            }
+
+            propagate_state(&mut gs);
+
+            let guaranteed_wins = get_guaranteed_winning_cards(&gs);
+            let mut potential_wins = get_potentially_winning_cards(&gs);
+
+            // Removes any cards that are same type as guaranteed wins
+            potential_wins.retain(|card| {
+                for gcard in guaranteed_wins.iter() {
+                    if gcard.variant_eq(card) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+
+            
+            println!("Guaranteed Win Cards:");
+            for card in guaranteed_wins.iter() {
+                println!("{}", card);
+            }
+
+
+            println!("\nPotential Win Cards:");
+            
+
+            print!("Rooms: ");
+            potential_wins.iter().for_each(|card| {
+                // Only get Rooms
+                if !card.variant_eq(&Card::RoomCard(Room::Hall)) {
+                    return;
+                }
+                print!("{}  ", card);
+            });
+
+            print!("\nWeapons: ");
+            potential_wins.iter().for_each(|card| {
+                // Only get Weapons
+                if !card.variant_eq(&Card::WeaponCard(Weapon::Pistol)) {
+                    return;
+                }
+                print!("{}  ", card);
+            });
+
+
+            print!("\nSuspects: ");
+            potential_wins.iter().for_each(|card| {
+                // Only get Rooms
+                if !card.variant_eq(&Card::SuspectCard(Suspect::Green)) {
+                    return;
+                }
+                print!("{}  ", card);
+            });
+
+            verify_state_and_save(gs)?;
 
             Ok(())
         }
@@ -244,7 +315,9 @@ pub fn verify_state_and_save(state: GameState) -> Result<()> {
         }
 
         Err(reason) => {
-            println!("{} {:?}", "\nError! Failed to verify init state because of".red(), reason);
+
+            //TODO: Change this wording, since it is not just init
+            println!("{} {}", "\nError! Failed to verify init state because".red(), reason);
 
             Ok(())
         }
