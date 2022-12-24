@@ -109,7 +109,6 @@ impl GameState {
 
         let number_of_cards_expected = self.get_number_of_expected_cards_per_hand();
 
-
         let mut already_must_have_cards: HashSet<Card> = HashSet::new();
 
         for player in self.player_hands.iter() {
@@ -157,7 +156,7 @@ impl GameState {
                     player.player_name.clone(),
                     player.must_not_have.len(),
                     "Must not Have Cards".to_owned(), 
-                    (Card::get_total_cards() - number_of_cards_expected))
+                    Card::get_total_cards() - number_of_cards_expected)
                 );
             }
 

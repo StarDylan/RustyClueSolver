@@ -5,8 +5,6 @@ pub mod game_state;
 
 
 pub mod errors {
-    use std::collections::HashSet;
-
     use error_chain::error_chain;
 
     use crate::player_hand::Card;

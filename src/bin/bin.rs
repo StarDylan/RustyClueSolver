@@ -2,7 +2,6 @@ use clap::Command;
 use cluesolverlib::accusation::Accusation;
 use cluesolverlib::player_hand::*;
 use cluesolverlib::solver::{propagate_state, get_potentially_winning_cards, get_guaranteed_winning_cards};
-use error_chain::ChainedError;
 use std::collections::HashSet;
 use std::{iter, vec};
 use std::fmt::Display;
