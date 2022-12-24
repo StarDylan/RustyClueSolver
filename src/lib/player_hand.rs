@@ -131,8 +131,23 @@ impl Card {
     pub fn get_total_cards() -> usize { 
         enum_iterator::cardinality::<Room>() + 
         enum_iterator::cardinality::<Suspect>() +
-        enum_iterator::cardinality::<Weapon>() 
-        - 3
+        enum_iterator::cardinality::<Weapon>()
+    }
+
+    pub fn variant_eq(&self, b: &Self) -> bool {
+        std::mem::discriminant(self) == std::mem::discriminant(b)
+    }
+
+    pub fn get_all_cards() -> HashSet<Card> {
+        let all_cards = 
+            enum_iterator::all::<Room>()
+                .map(|r|Card::RoomCard(r))
+            .chain(enum_iterator::all::<Suspect>()
+                .map(|s|Card::SuspectCard(s)))
+            .chain(enum_iterator::all::<Weapon>()
+                .map(|w|Card::WeaponCard(w)));
+
+        all_cards.collect()
     }
 }
 

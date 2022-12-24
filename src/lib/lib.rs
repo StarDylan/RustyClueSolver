@@ -5,16 +5,39 @@ pub mod game_state;
 
 
 pub mod errors {
+    use std::collections::HashSet;
+
     use error_chain::error_chain;
+
+    use crate::player_hand::Card;
 
     error_chain!{
         errors {
-            PlayerMustHaveMoreCardsThenExpected
-            PlayerCardContradiction
-            PlayerHasPublicCard
-            SelfIsNotComplete
-            InvalidPlayerIndex
-            AccusationContradiction
+            PlayerHasInvalidCardNumber(player: String, actual: usize, list_type: String, limit: usize) {
+                description("Player has an invalid number of cards")
+                display("\"{}\" has {} {}, while the limit is {}", player, actual, list_type, limit)
+            }
+            PlayerCardContradiction(player: String, card: Card, reason: String) {
+                description("Player is contradictory to other info")
+                display("\"{}\" has contradictory card \"{}\" because {}", player, card, reason)
+            }
+            PlayerHasPublicCard(player: String, cards: Card) {
+                description("Player must have a publicly shown card")
+                display("\"{}\" has public card \"{}\"", player, cards)
+            }
+            SelfIsNotComplete {
+                description("Player Self does not have complete set of cards")
+                display("Self Player does not have complete set of cards")
+                
+            }
+            InvalidPlayerIndex(location: String, actual: usize) {
+                description("Invalid Player Index")
+                display("invalid index of {} at {}",actual, location)
+            }
+            AccusationContradiction {
+                description("Accusation card is shown, yet responding player is none")
+                display("accusation card is shown, yet responding player is none")
+            }
         }
 
         foreign_links {

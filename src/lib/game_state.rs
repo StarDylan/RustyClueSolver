@@ -68,7 +68,44 @@ impl GameState {
     /// 
     /// Self must be complete
     pub fn verify_state(&self) -> Result<()> {
-        //todo!("Do a result with Errors");
+
+        // Check all player indecies are valid
+        if self.self_index >= self.player_hands.len() {
+            bail!(ErrorKind::InvalidPlayerIndex(
+                "self index".to_owned(),
+                self.self_index
+            ))
+        }
+
+
+        // If a card is shown, then the responding player must be Some()
+        for acc in self.accusations.iter() {
+            if acc.card_shown.is_some() && acc.responding_player_index.is_none() {
+                bail!(ErrorKind::AccusationContradiction)
+            }   
+        }
+
+        for acc in self.accusations.iter() {
+
+            if acc.accuser_player_index >= self.player_hands.len() {
+                bail!(ErrorKind::InvalidPlayerIndex(
+                    "accusation accuser player index".to_owned(),
+                    acc.accuser_player_index
+                ))
+            }
+
+            if acc.responding_player_index.is_none() {
+                continue;
+            }
+
+            if acc.responding_player_index.unwrap() >= self.player_hands.len() {
+                bail!(ErrorKind::InvalidPlayerIndex(
+                    "accusation responding player index".to_owned(),
+                    acc.responding_player_index.unwrap()
+                ))
+            }
+        }
+
 
         let number_of_cards_expected = self.get_number_of_expected_cards_per_hand();
 
@@ -80,7 +117,12 @@ impl GameState {
             if !already_must_have_cards.is_disjoint(&player.must_have) {
                 // Overlapping, Contradiction since two different players can't
                 // have the same card.
-                bail!(ErrorKind::PlayerCardContradiction);
+                let intersection = already_must_have_cards.intersection(&player.must_have);
+                bail!(ErrorKind::PlayerCardContradiction(
+                    player.player_name.to_owned(),
+                    intersection.into_iter().next().unwrap().clone(),
+                    "player must have the same card as another player".to_owned()
+                ));
             }
 
             // Update the cards we've already checked against
@@ -89,22 +131,43 @@ impl GameState {
             }
 
             if player.must_have.len() > number_of_cards_expected {
-                bail!(ErrorKind::PlayerMustHaveMoreCardsThenExpected);
+                bail!(ErrorKind::PlayerHasInvalidCardNumber(
+                    player.player_name.clone(),
+                    player.must_have.len(),
+                    "Must Have Cards".to_owned(), 
+                    number_of_cards_expected)
+                );
             }
 
             if !player.must_have.is_disjoint(&player.must_not_have) {
                 // Elements in common, thus contradiction
-                bail!(ErrorKind::PlayerCardContradiction);
+
+                let intersection = player.must_have.intersection(&player.must_not_have);
+
+                bail!(ErrorKind::PlayerCardContradiction(
+                    player.player_name.to_owned(),
+                    intersection.into_iter().next().unwrap().clone(),
+                    "player has card in both must have and must not have".to_owned()
+                ));
             }
 
-            if player.must_not_have.len() > (Card::get_total_cards() - 3 - number_of_cards_expected) {
-                // Can't have less cards then required to
-                bail!(ErrorKind::PlayerMustHaveMoreCardsThenExpected);
+            if player.must_not_have.len() > (Card::get_total_cards() - number_of_cards_expected) {
+                // Can't have more cards then possible
+                bail!(ErrorKind::PlayerHasInvalidCardNumber(
+                    player.player_name.clone(),
+                    player.must_not_have.len(),
+                    "Must not Have Cards".to_owned(), 
+                    (Card::get_total_cards() - number_of_cards_expected))
+                );
             }
 
             if !self.public_cards.is_disjoint(&player.must_have) {
                 // Can't have any of the public cards
-                bail!(ErrorKind::PlayerHasPublicCard);
+                // Displays first public card found
+                let public_card_intersection = self.public_cards.intersection(&player.must_have);
+                bail!(ErrorKind::PlayerHasPublicCard(
+                    player.player_name.clone(), 
+                    public_card_intersection.into_iter().next().unwrap().clone()));
             }
         }
 
@@ -117,31 +180,19 @@ impl GameState {
                     self.player_hands.get(accusation.responding_player_index.unwrap()).unwrap();
 
                 if responding_player.must_not_have.contains(&accusation.card_shown.as_ref().unwrap()) {
-                    bail!(ErrorKind::PlayerCardContradiction);
+
+                    let card = responding_player
+                        .must_not_have.iter()
+                        .find(|card| card.clone() == accusation.card_shown.as_ref().unwrap())
+                        .unwrap();
+
+                    bail!(ErrorKind::PlayerCardContradiction(
+                        responding_player.player_name.to_owned(),
+                        card.clone(),
+                        "player has showed a card they must not have".to_owned()
+                    ));
                 }
             }
-        }
-
-        // Check all player indecies are valid
-        if self.self_index >= self.player_hands.len() {
-            bail!(ErrorKind::InvalidPlayerIndex)
-        }
-
-        for acc in self.accusations.iter() {
-            if acc.responding_player_index.is_none() {
-                continue;
-            }
-
-            if acc.responding_player_index.unwrap() >= self.player_hands.len() {
-                bail!(ErrorKind::InvalidPlayerIndex)
-            }
-        }
-
-        // If a card is shown, then the responding player must be Some()
-        for acc in self.accusations.iter() {
-            if acc.card_shown.is_some() && acc.responding_player_index.is_none() {
-                bail!(ErrorKind::AccusationContradiction)
-            }   
         }
 
         if !self_hand.is_complete(number_of_cards_expected) {
