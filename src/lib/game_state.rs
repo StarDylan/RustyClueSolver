@@ -77,19 +77,11 @@ impl GameState {
             ))
         }
 
-
-        // If a card is shown, then the responding player must be Some()
-        for acc in self.accusations.iter() {
-            if acc.card_shown.is_some() && acc.responding_player_index.is_none() {
-                bail!(ErrorKind::AccusationContradiction)
-            }   
-        }
-
         for acc in self.accusations.iter() {
 
             if acc.accuser_player_index >= self.player_hands.len() {
                 bail!(ErrorKind::InvalidPlayerIndex(
-                    "accusation accuser player index".to_owned(),
+                    "accusation accuser_player_index".to_owned(),
                     acc.accuser_player_index
                 ))
             }
@@ -100,10 +92,26 @@ impl GameState {
 
             if acc.responding_player_index.unwrap() >= self.player_hands.len() {
                 bail!(ErrorKind::InvalidPlayerIndex(
-                    "accusation responding player index".to_owned(),
+                    "accusation responding_player_index".to_owned(),
                     acc.responding_player_index.unwrap()
                 ))
             }
+
+            if acc.responding_player_index.unwrap() == acc.accuser_player_index {
+                bail!(ErrorKind::InvalidPlayerIndex(
+                    "accusation responding_player_index which is same as accuser_player_index".to_owned(),
+                    acc.responding_player_index.unwrap()
+                ))
+            }
+        }
+
+        // If a card is shown, then the responding player must be Some()
+        for acc in self.accusations.iter() {
+            if acc.card_shown.is_some() && acc.responding_player_index.is_none() {
+                bail!(ErrorKind::AccusationContradiction(
+                    self.player_hands[acc.accuser_player_index].player_name.to_owned(), 
+                    acc.card_shown.as_ref().unwrap().to_string()))
+            }   
         }
 
 

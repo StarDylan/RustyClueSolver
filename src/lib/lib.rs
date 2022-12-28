@@ -33,9 +33,9 @@ pub mod errors {
                 description("Invalid Player Index")
                 display("invalid index of {} at {}",actual, location)
             }
-            AccusationContradiction {
-                description("Accusation card is shown, yet responding player is none")
-                display("accusation card is shown, yet responding player is none")
+            AccusationContradiction(accusing_player: String, shown_card: String) {
+                description("accusation card is shown, yet responding player is none")
+                display("{}'s Accusation says card \"{}\" is shown, yet responding player is none", accusing_player, shown_card)
             }
         }
 

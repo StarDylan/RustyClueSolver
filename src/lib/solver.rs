@@ -2,13 +2,13 @@ use std::collections::HashSet;
 
 use crate::game_state::GameState;
 use crate::cards::*;
+use crate::errors::*;
 
 
 /// Applies logicial consequences that must be true.
 /// 
-/// GameState must be checked that it is valid for this
-/// function to work correctly!
-pub fn propagate_state(gs: &mut GameState){
+/// GameState must be valid in order to run propagate_state
+pub fn propagate_state(gs: &mut GameState) -> Result<()>{
 
     // -> Must have
     // If a player shows a card, they must have that card
@@ -131,6 +131,7 @@ pub fn propagate_state(gs: &mut GameState){
         } 
     }
 
+    Ok(())
 }
 
 /// Determines what cards must and could be
@@ -224,7 +225,7 @@ mod tests {
         };
 
         // Everyone else, not p1, must not have green
-        propagate_state(&mut gs);
+        propagate_state(&mut gs).unwrap();
 
 
         // Check everyone else must not have green
@@ -273,7 +274,7 @@ mod tests {
             accusations: accusations,
         };
 
-        propagate_state(&mut gs);
+        propagate_state(&mut gs).unwrap();
 
         for i in vec![0, 3] {
             assert_eq!(gs.player_hands.get(i).unwrap().must_not_have.len(), 0);
@@ -331,7 +332,7 @@ mod tests {
             accusations: accusations,
         };
 
-        propagate_state(&mut gs);
+        propagate_state(&mut gs).unwrap();
 
 
         // Check that p1 must have Study

@@ -126,8 +126,9 @@ fn new_game() -> Result<()> {
 
     let gs = GameState::new_game_state(self_hand, other_player_hands, starting_player, public_cards);
     
-    verify_state_and_save(gs)?;
+    gs.verify_state()?;
 
+    gs.save_to_file(GAME_STATE_PATH)?;
     Ok(())
 
 }
@@ -199,11 +200,12 @@ fn accuse() -> Result<()> {
         responding_player_index: responding_player_index,
         card_shown: card_shown,
     });
-    
 
-    propagate_state(&mut gs);
+    propagate_state(&mut gs)?;
 
-    verify_state_and_save(gs)?;
+    gs.verify_state()?;
+
+    gs.save_to_file(GAME_STATE_PATH)?;
 
     Ok(())
 }
@@ -218,10 +220,9 @@ fn verify() -> Result<()> {
 
 fn wins() -> Result<()> {
     let mut gs = GameState::read_from_file(GAME_STATE_PATH)?;
+    
+    propagate_state(&mut gs)?;
 
-    gs.verify_state()?;
-
-    propagate_state(&mut gs);
 
     let guaranteed_wins = get_guaranteed_winning_cards(&gs);
     let mut potential_wins = get_potentially_winning_cards(&gs);
@@ -280,27 +281,6 @@ fn wins() -> Result<()> {
 // -------------------------------
 // ------User Input Helpers-------
 // -------------------------------
-
-pub fn verify_state_and_save(state: GameState) -> Result<()> {
-    match state.verify_state() {
-        Ok(()) => {
-            println!("{} {}", "\nState Verified!".green(), "Saved to file".purple());
-
-            state.save_to_file(GAME_STATE_PATH)?;
-
-            Ok(())
-        }
-
-        Err(reason) => {
-
-            //TODO: Change this wording, since it is not just init
-            println!("{} {}", "\nError! Failed to verify init state because".red(), reason);
-
-            Ok(())
-        }
-    }
-
-}
 
 pub fn get_card_from_user() -> Result<Card> {
 
