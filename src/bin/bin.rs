@@ -129,6 +129,8 @@ fn new_game() -> Result<()> {
     gs.verify_state()?;
 
     gs.save_to_file(GAME_STATE_PATH)?;
+
+    println!("{} {}", "Game State Verified Successfully!".green(), "Saved to File.".purple());
     Ok(())
 
 }
@@ -207,6 +209,8 @@ fn accuse() -> Result<()> {
 
     gs.save_to_file(GAME_STATE_PATH)?;
 
+    println!("{} {}", "Game State Verified Successfully!".green(), "Saved to File.".purple());
+
     Ok(())
 }
 
@@ -215,6 +219,8 @@ fn verify() -> Result<()> {
 
     gs.verify_state()?;
 
+    println!("{}", "Game State Verified!".green());
+
     Ok(())
 }
 
@@ -222,6 +228,8 @@ fn wins() -> Result<()> {
     let mut gs = GameState::read_from_file(GAME_STATE_PATH)?;
     
     propagate_state(&mut gs)?;
+    
+    gs.verify_state()?;
 
 
     let guaranteed_wins = get_guaranteed_winning_cards(&gs);
@@ -275,8 +283,11 @@ fn wins() -> Result<()> {
         print!("{}  ", card);
     });
 
+    println!();
+
     Ok(())
 }
+
 
 // -------------------------------
 // ------User Input Helpers-------
