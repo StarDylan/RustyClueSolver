@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
-use crate::{game_state::GameState, player_hand::Card};
+use crate::game_state::GameState;
+use crate::cards::*;
 
 
 /// Applies logicial consequences that must be true.
@@ -191,7 +192,8 @@ pub fn get_responding_players(start_idx: usize,end_idx: Option<usize>, size: usi
 mod tests {
     use std::{collections::HashSet, vec};
 
-    use crate::{player_hand::{PlayerHand, Room, Suspect, Weapon}, accusation::Accusation};
+    use crate::accusation::Accusation;
+    use crate::player_hand::PlayerHand;
 
     use super::*;
 

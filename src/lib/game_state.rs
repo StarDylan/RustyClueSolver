@@ -2,7 +2,7 @@ use std::{io::{Write, Read}, fs::File, collections::HashSet};
 
 use error_chain::bail;
 
-use crate::{player_hand::*, accusation::Accusation};
+use crate::{player_hand::*, accusation::Accusation, cards::Card};
 
 use crate::errors::*;
 

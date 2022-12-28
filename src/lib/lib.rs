@@ -2,12 +2,13 @@ pub mod solver;
 pub mod player_hand;
 pub mod accusation;
 pub mod game_state;
+pub mod cards;
 
 
 pub mod errors {
     use error_chain::error_chain;
 
-    use crate::player_hand::Card;
+    use crate::cards::Card;
 
     error_chain!{
         errors {

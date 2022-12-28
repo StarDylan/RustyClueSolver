@@ -1,6 +1,7 @@
 use clap::Command;
 use cluesolverlib::accusation::Accusation;
-use cluesolverlib::player_hand::*;
+use cluesolverlib::cards::*;
+use cluesolverlib::player_hand::PlayerHand;
 use cluesolverlib::solver::{propagate_state, get_potentially_winning_cards, get_guaranteed_winning_cards};
 use std::collections::HashSet;
 use std::{iter, vec};
@@ -212,11 +213,11 @@ fn new_game() -> Result<()> {
 
         public_cards.insert(card);        
     }
-    
+
 
 
     let gs = GameState::new_game_state(self_hand, other_player_hands, starting_player, public_cards);
-
+    
     verify_state_and_save(gs)?;
 
     Ok(())
@@ -225,7 +226,7 @@ fn new_game() -> Result<()> {
 
 fn accuse() -> Result<()> {
     let mut gs = GameState::read_from_file(GAME_STATE_PATH)?;
-
+    
     println!("Who is making the Accusation?");
     let accuser_player_index = get_player_from_user(&gs.player_hands, vec![])?;
 
