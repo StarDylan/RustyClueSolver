@@ -138,6 +138,7 @@ pub fn propagate_state(gs: &mut GameState) -> Result<()>{
 pub fn get_potentially_winning_cards(gs: &GameState) -> HashSet<Card>{
     let mut potentially_winning_cards: HashSet<Card> = Card::get_all_cards(); 
 
+    // Remove Cards players must have
     for hand in gs.player_hands.iter() {
         potentially_winning_cards = &potentially_winning_cards - &hand.must_have;
     }
@@ -148,15 +149,16 @@ pub fn get_potentially_winning_cards(gs: &GameState) -> HashSet<Card>{
 }
 
 pub fn get_guaranteed_winning_cards(gs: &GameState) -> HashSet<Card> {
-    // Get all the cards which everyone does not have.
+    // Get all the cards
     let mut common_do_not_haves: HashSet<Card> = Card::get_all_cards();
-    
+
+    // Keep cards that everyone must not have.
     for hand in gs.player_hands.iter() {
-        common_do_not_haves.retain(|card|hand.must_not_have.contains(card));
+        common_do_not_haves.retain(|card| hand.must_not_have.contains(card));
     }
 
     // Remove elements which are in public cards
-    common_do_not_haves.retain(|card| !gs.public_cards.contains(card));
+    common_do_not_haves = &common_do_not_haves - &gs.public_cards;
 
     let guaranteed_winning_cards = common_do_not_haves;
 
