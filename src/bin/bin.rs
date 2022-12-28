@@ -17,7 +17,7 @@ use cluesolverlib::game_state::*;
 
 const GAME_STATE_PATH: &str = "game_state.json";
 
-fn main() -> Result<()> {
+fn main() {
     let matches = Command::new("cluesolver")
             
         .subcommand(
@@ -36,122 +36,30 @@ fn main() -> Result<()> {
         .get_matches();
 
 
-    match matches.subcommand() {
+    let result = match matches.subcommand() {
         Some(("init", _sub_matches)) => {
-            new_game()?;
-
-            Ok(())
+            new_game()
         },
 
         Some(("verify", _sub_matches)) => {
-            let gs = match GameState::read_from_file(GAME_STATE_PATH) {
-                Ok(game_state) => game_state,
-
-                Err(Error(ErrorKind::Io(io_err), _)) => match io_err.kind(){
-                    io::ErrorKind::NotFound => {
-                        eprintln!("File \"{}\" not found!", GAME_STATE_PATH);
-                        return Ok(());
-                    }
-
-                    _ => {
-                    println!("{} {}", "Unable to open file because".red(), io_err);
-                    return Ok(());
-                    }
-                }
-
-                Err(e) => {
-                    return Err(e);
-                }
-                
-            };
-
-            match gs.verify_state() {
-                Ok(()) => 
-                    println!("{}", "Game State Verified Successfully!".green()),
-
-                Err(reason) => 
-                    println!("{} {:?}","Game State Verification failed because".red(), reason)
-            }
-
-            Ok(())
+            verify()
         },
          
         Some(("accuse", _sub_matches)) => {
-            accuse()?;
-
-            Ok(())
+            accuse()
         }
         Some(("wins", _sub_matches)) => {
-            let mut gs = GameState::read_from_file(GAME_STATE_PATH)?;
-
-            let verify_result = gs.verify_state();
-
-            if verify_result.is_err() {
-                println!("{} {}","Failed to verify state because".red(), verify_result.unwrap_err());
-                return Ok(());
-            }
-
-            propagate_state(&mut gs);
-
-            let guaranteed_wins = get_guaranteed_winning_cards(&gs);
-            let mut potential_wins = get_potentially_winning_cards(&gs);
-
-            // Removes any cards that are same type as guaranteed wins
-            potential_wins.retain(|card| {
-                for gcard in guaranteed_wins.iter() {
-                    if gcard.variant_eq(card) {
-                        return false;
-                    }
-                }
-                return true;
-            });
-
-            
-            println!("Guaranteed Win Cards:");
-            for card in guaranteed_wins.iter() {
-                println!("{}", card);
-            }
-
-
-            println!("\nPotential Win Cards:");
-            
-
-            print!("Rooms: ");
-            potential_wins.iter().for_each(|card| {
-                // Only get Rooms
-                if !card.variant_eq(&Card::RoomCard(Room::Hall)) {
-                    return;
-                }
-                print!("{}  ", card);
-            });
-
-            print!("\nWeapons: ");
-            potential_wins.iter().for_each(|card| {
-                // Only get Weapons
-                if !card.variant_eq(&Card::WeaponCard(Weapon::Pistol)) {
-                    return;
-                }
-                print!("{}  ", card);
-            });
-
-
-            print!("\nSuspects: ");
-            potential_wins.iter().for_each(|card| {
-                // Only get Rooms
-                if !card.variant_eq(&Card::SuspectCard(Suspect::Green)) {
-                    return;
-                }
-                print!("{}  ", card);
-            });
-
-            verify_state_and_save(gs)?;
-
-            Ok(())
+            wins()
         }
         _ => {
             Ok(())
         }
-    }
+    };
+
+    if let Err(e) = result {
+        println!("{} {}", "\nError occurred because".red(), e.to_string());
+        ::std::process::exit(1);
+    };
 
 }
 
@@ -296,6 +204,75 @@ fn accuse() -> Result<()> {
     propagate_state(&mut gs);
 
     verify_state_and_save(gs)?;
+
+    Ok(())
+}
+
+fn verify() -> Result<()> {
+    let gs = GameState::read_from_file(GAME_STATE_PATH)?;
+
+    gs.verify_state()?;
+
+    Ok(())
+}
+
+fn wins() -> Result<()> {
+    let mut gs = GameState::read_from_file(GAME_STATE_PATH)?;
+
+    gs.verify_state()?;
+
+    propagate_state(&mut gs);
+
+    let guaranteed_wins = get_guaranteed_winning_cards(&gs);
+    let mut potential_wins = get_potentially_winning_cards(&gs);
+
+    // Removes any cards that are same type as guaranteed wins
+    potential_wins.retain(|card| {
+        for gcard in guaranteed_wins.iter() {
+            if gcard.variant_eq(card) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    
+    println!("Guaranteed Win Cards:");
+    for card in guaranteed_wins.iter() {
+        println!("{}", card);
+    }
+
+
+    println!("\nPotential Win Cards:");
+    
+
+    print!("Rooms: ");
+    potential_wins.iter().for_each(|card| {
+        // Only get Rooms
+        if !card.variant_eq(&Card::RoomCard(Room::Hall)) {
+            return;
+        }
+        print!("{}  ", card);
+    });
+
+    print!("\nWeapons: ");
+    potential_wins.iter().for_each(|card| {
+        // Only get Weapons
+        if !card.variant_eq(&Card::WeaponCard(Weapon::Pistol)) {
+            return;
+        }
+        print!("{}  ", card);
+    });
+
+
+    print!("\nSuspects: ");
+    potential_wins.iter().for_each(|card| {
+        // Only get Rooms
+        if !card.variant_eq(&Card::SuspectCard(Suspect::Green)) {
+            return;
+        }
+        print!("{}  ", card);
+    });
 
     Ok(())
 }
