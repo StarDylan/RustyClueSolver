@@ -160,9 +160,7 @@ pub fn get_guaranteed_winning_cards(gs: &GameState) -> HashSet<Card> {
     // Remove elements which are in public cards
     common_do_not_haves = &common_do_not_haves - &gs.public_cards;
 
-    let guaranteed_winning_cards = common_do_not_haves;
-
-    guaranteed_winning_cards
+    common_do_not_haves
 }
 
 /// Gets index of players who are between start and end, wrapping around if neccessary.
@@ -187,7 +185,7 @@ pub fn get_responding_players(start_idx: usize,end_idx: Option<usize>, size: usi
         responding_players.push(current_player_idx);
     }
 
-    return responding_players;
+    responding_players
 }
 
 

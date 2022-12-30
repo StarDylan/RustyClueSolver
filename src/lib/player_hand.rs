@@ -15,7 +15,7 @@ use crate::cards::Card;
 // Callers from outside my crate can't directly construct me
 // or exhaustively match on my fields!
 #[non_exhaustive]
-#[derive(Debug, Clone,serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(Debug, Clone,serde::Serialize, serde::Deserialize, PartialEq, Eq)]
 pub struct PlayerHand {
     pub player_name: String,
 
@@ -42,6 +42,6 @@ impl PlayerHand {
             return true;
         }
         
-        return false;
+        false
     }
 }

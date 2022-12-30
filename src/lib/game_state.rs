@@ -186,11 +186,11 @@ impl GameState {
                 let responding_player = 
                     self.player_hands.get(accusation.responding_player_index.unwrap()).unwrap();
 
-                if responding_player.must_not_have.contains(&accusation.card_shown.as_ref().unwrap()) {
+                if responding_player.must_not_have.contains(accusation.card_shown.as_ref().unwrap()) {
 
                     let card = responding_player
                         .must_not_have.iter()
-                        .find(|card| card.clone() == accusation.card_shown.as_ref().unwrap())
+                        .find(|card| &(*card).clone() == accusation.card_shown.as_ref().unwrap())
                         .unwrap();
 
                     bail!(ErrorKind::PlayerCardContradiction(
@@ -206,7 +206,7 @@ impl GameState {
             bail!(ErrorKind::SelfIsNotComplete);
         }
 
-        return Ok(());
+        Ok(())
     }
 
     pub fn add_accusation(&mut self, accusation: Accusation) {

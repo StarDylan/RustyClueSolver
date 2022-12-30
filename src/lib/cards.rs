@@ -21,11 +21,11 @@ impl Card {
     pub fn get_all_cards() -> HashSet<Card> {
         let all_cards = 
             enum_iterator::all::<Room>()
-                .map(|r|Card::RoomCard(r))
+                .map(Card::RoomCard)
             .chain(enum_iterator::all::<Suspect>()
-                .map(|s|Card::SuspectCard(s)))
+                .map(Card::SuspectCard))
             .chain(enum_iterator::all::<Weapon>()
-                .map(|w|Card::WeaponCard(w)));
+                .map(Card::WeaponCard));
 
         all_cards.collect()
     }

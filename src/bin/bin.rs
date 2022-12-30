@@ -57,7 +57,7 @@ fn main() {
     };
 
     if let Err(e) = result {
-        println!("{} {}", "\nError occurred because".red(), e.to_string());
+        println!("{} {}", "\nError occurred because".red(), e);
         ::std::process::exit(1);
     };
 
@@ -146,9 +146,9 @@ fn accuse() -> Result<()> {
 
     println!("\n\nPlease enter their accusation");
     let room = get_room_card_from_user()?;
-    println!("");
+    println!();
     let weapon = get_weapon_card_from_user()?;
-    println!("");
+    println!();
     let suspect = get_suspect_card_from_user()?;
 
 
@@ -199,8 +199,8 @@ fn accuse() -> Result<()> {
         room,
         suspect,
         weapon,
-        responding_player_index: responding_player_index,
-        card_shown: card_shown,
+        responding_player_index,
+        card_shown,
     });
 
     propagate_state(&mut gs)?;
@@ -242,7 +242,7 @@ fn wins() -> Result<()> {
                 return false;
             }
         }
-        return true;
+        true
     });
 
     
@@ -298,34 +298,34 @@ pub fn get_card_from_user() -> Result<Card> {
     let card_type = get_string_from_user(
         "r) Room\nw) Weapon\ns) Suspect", 
         |user_input| {
-            if user_input.chars().nth(0).is_none() {
+            if user_input.chars().next().is_none() {
                 return false;
             }
 
-            if user_input.chars().nth(0).unwrap() == 'r' || 
-                user_input.chars().nth(0).unwrap() == 'w' || 
-                user_input.chars().nth(0).unwrap() == 's' {
+            if user_input.starts_with('r') || 
+                user_input.starts_with('w') || 
+                user_input.starts_with('s') {
                     return true; 
             }
 
-            return false;
+            false
         })?;
 
 
     loop {
-        if card_type.chars().nth(0).unwrap() == 'r' {
+        if card_type.starts_with('r') {
             // Room Card
             let selected_room_card = get_room_card_from_user()?;
 
             return Ok(Card::RoomCard(selected_room_card));
         
-        } else if card_type.chars().nth(0).unwrap() == 'w' {
+        } else if card_type.starts_with('w') {
             // Weapon Card
             let selected_room_card = get_weapon_card_from_user()?;
 
             return Ok(Card::WeaponCard(selected_room_card));
 
-        } else if card_type.chars().nth(0).unwrap() == 's' {
+        } else if card_type.starts_with('s') {
             // Suspect Card
             let selected_room_card = get_suspect_card_from_user()?;
 
@@ -337,19 +337,19 @@ pub fn get_card_from_user() -> Result<Card> {
 pub fn get_room_card_from_user() -> Result<Room> {
     let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Room>())?;
 
-    return Ok(selected_room_card);
+    Ok(selected_room_card)
 }
 
 pub fn get_weapon_card_from_user() -> Result<Weapon> {
     let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Weapon>())?;
 
-    return Ok(selected_room_card);
+    Ok(selected_room_card)
 }
 
 pub fn get_suspect_card_from_user() -> Result<Suspect> {
     let selected_room_card = get_list_item_from_user(&mut enum_iterator::all::<Suspect>())?;
 
-    return Ok(selected_room_card);
+    Ok(selected_room_card)
 }
 
 pub fn get_string_from_user<F>(prompt: &str, valid_input: F) -> Result<String> where F: Fn(&str) -> bool {
@@ -380,7 +380,7 @@ pub fn get_number_from_user<T: num::Integer + FromStr>(prompt: &str) -> Result<T
 
         match number {
             Ok(num) => {
-                return Ok(num);
+                Ok(num)
             } 
             Err(_) => {
                 panic!("get_number_from_user failed! with {}", string_from_user.trim());
@@ -413,9 +413,9 @@ pub fn get_yes_no_from_user(prompt: &str) -> Result<bool> {
     })?;
 
     if user_response.trim().to_lowercase().starts_with('y') {
-        return Ok(true);
+        Ok(true)
     } else {
-        return Ok(false);
+        Ok(false)
     }
     
 }
