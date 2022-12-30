@@ -18,10 +18,13 @@ pub fn propagate_state(gs: &mut GameState) -> Result<()>{
         }
 
         gs.player_hands
-            .get_mut(acc.responding_player_index.unwrap())
-            .unwrap()
+            .get_mut(acc.responding_player_index
+                .expect("valid states that have a card shown, also have a responding_player_index ")
+            )
+            .expect("valid states have valid responding_player_index")
             .must_have
-            .insert(acc.card_shown.clone().unwrap());
+            .insert(acc.card_shown.clone()
+                .expect("Checked that card_shown is Ok() above"));
     }
 
     // -> Does not haves
@@ -39,7 +42,7 @@ pub fn propagate_state(gs: &mut GameState) -> Result<()>{
             let must_not_have_set = 
                 &mut gs.player_hands
                     .get_mut(player_who_did_not_have_card_index)
-                    .unwrap()
+                    .expect("valid player indicies from players_who_did_not_have_cards")
                     .must_not_have;
 
 
