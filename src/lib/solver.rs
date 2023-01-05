@@ -79,8 +79,14 @@ pub fn propagate_state(gs: &mut GameState) -> Result<()>{
         // Does Not haves -> Must Have
         // If Unknown Accusation, check if the 2 cards they don't have, therefore responding player
         // must have the third card.
-        for acc in gs.accusations.iter() {
         
+        for acc in gs.accusations.iter() {
+            if acc.responding_player_index.is_none() {
+                // No One Responded to accusation.
+                continue;
+            }
+
+
             // Already know the card
             if acc.card_shown.is_some() {
                 continue;
